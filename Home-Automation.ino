@@ -1,5 +1,5 @@
 #define ONTIME 20000
-#define INTERVAL1 10000
+#define INTERVAL1 5000
 #define RELAYNO 2
 #define SENSNO 2
 #define INSTART 14
@@ -13,6 +13,7 @@ byte wifihist[RELAYNO]={};
 byte status[RELAYNO]={};
 int sensor[SENSNO]={};
 unsigned long int time=millis();
+
 void setup(){
   for(byte i=0;i<RELAYNO+SENSNO;i++){
   pinMode(RELAYSTART+i,OUTPUT);
@@ -61,30 +62,23 @@ if(wifirecvd==1){
 }
 
 void sensact(){
-  //only for PIR as of now
   for(byte i=0;i<SENSNO;i++){
-if(sensor[i]>500&&millis()>=time+(ONTIME/10)){
-  time=millis();
-  if((status[LIGHT]!=1||status[FAN]!=1)){
- if(status[LIGHT]==1&&millis()<=time+(INTERVAL1)){status[FAN]=1;changestatus=1;}
-if(DEBUG){ Serial.print("  turned ON  ");}
- //Serial.println(sensor[i]);
-  time=millis();
-status[LIGHT]=1;
-changestatus=1;
- }
-  }
-if (sensor[i]<100&&(millis()>=time+(ONTIME))&&(status[LIGHT]==1||status[FAN]==1)){
- time=millis();
-if(DEBUG){  Serial.print("  turned OFF  ");}
-// Serial.println(sensor[i]);
-status[LIGHT]=0;
-status[FAN]=0;
-changestatus=1;
+      if(sensor[i]>500){
+          //still present turn on lights and fans
+            if(status[LIGHT]==1&&millis()>=time+INTERVAL1&&status[FAN]==0){status[FAN]=1;changestatus=1;time=millis();}  
+            if(status[LIGHT]==0){status[LIGHT]=1;changestatus=1;time=millis();}
+            if(status[FAN]==1&&status[LIGHT]==1){time=millis();}  
+    }
+    else{
+    //no one present simply wait for ONTIME and then turn OFF everything
+      if(millis()>=time+ONTIME&&(status[LIGHT]!=0||status[LIGHT]!=0)){status[LIGHT]=0;status[FAN]=0;changestatus=1;       time=millis();}   
+ }  
+    }
 }
-  }
 
-}
+
+
+
 void loop(){
 getsens();sensact();
   byte getwi=getwifi();
